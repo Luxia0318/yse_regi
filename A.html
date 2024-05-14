@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <title>YSEレジ</title>
+    </head>
+    <body>
+        <h2>YSEレジ</h2>
+        <!-- 計算結果表示 -->
+        <p style="width:210px;background-color:black; text-align: right; color: white;padding-right:5px;border: 2px solid rgb(0, 255, 98);">
+            <!-- YSEレジプログラム本体 -->
+            <?php
+                //[参考]
+                //デバッグ用：var_dump($num);
+                //n:null
+                //$num:押されたボタンの値
+                //$keep1:左演算値
+                //$keep2:右演算値
+                //$enzan:演算子
+
+                //関数ブロック（ここから）---------------------------------
+
+                //数字追加関数
+                function numadd($n1,$n2){
+                    //先頭が0 または nullだった場合
+                    if($n1=="0"||$n1=="n"){
+                        $n1=$n2;                //$keepを上書きする
+                    }
+                    //先頭が0ではない場合
+                    else{
+                        $n1.=$n2;               //$keepの後ろに文字を追加する
+                    }
+                    return $n1;                 //$n1を返す
+                }
+
+                //消費税計算関数
+                function tax($n1){
+                    $nm=floor((int)$n1*1.1);    //消費税計算（消費税：10%）
+                    return $nm;                 //$nmを返す
+                }
+
+                //演算関数
+                function calc($n1,$n2,$e)
+                {
+                    if($e=="+"){
+                        $n1=plus($n1,$n2);      //加算関数の呼び出し
+                    }
+                    elseif($e=="*"){
+                        $n1=times($n1,$n2);     //乗算関数呼び出し
+                    }
+                    return $n1;                 //$n1を返す
+                }
+
+                //加算関数
+                function plus($n1,$n2){
+                    $n1+=$n2;                   //加算処理
+                    return $n1;                 //$n1を返す
+                }
+
+                //乗算関数
+                function times($n1,$n2){
+                    $n1*=$n2;                   //乗算処理
+                    return $n1;                 //$n1を返す
+                }
+
+                //データベース接続関数
+                function db_connect(){
+                    try{
+                        //データベース:uriagedbに接続　ホスト:127.0.0.1　ユーザーID:root　パスワード:なし
+                        $db=new PDO('mysql:dbname=uriagedb;host=127.0.0.1;charset=utf8','root','');
+                        return $db;             //$dbを返す
+                    } catch(PDOException $e){
+                        echo 'DB接続エラー： ' . $e->getMessage();
+                        exit;                   //スクリプト終了
+                    }
+                }
+
+                //売上登録関数
+                function insert($n1){
+                    $db=db_connect();           //データベース接続関数の呼び出し
+                    //SQL文の作成
+                    $sql="INSERT INTO uriage(keijo,nichiji) VALUES(" . $n1 . ",'" . date('Y-m-d H:i:s') . "')";
+                    $count=$db->query($sql);    //SQL実行
+                    $db=null;                   //データベース切断
+                    return 0;                   //0を返す
+                }
+
+                //売上計算関数
+                function display(){
+                    $db=db_connect();           //データベース接続関数の呼び出し
+                    //SQL(SELECT文)を実行してデータを$recordsに代入
+                    $records=$db->query('SELECT * FROM uriage');
+                    $sum=0;                     //合計$sumを0にクリア
+                    //$recordsから1つずつデータを取だす
+                    while($data = $records->fetch()){
+                        $sum+=$data['keijo'];   //合計$sumに加算していく
+                    }
+                    $db=null;                   //データベース切断
+                    return $sum;                //合計$sumを返す
+                }
+            
+                //関数ブロック（ここまで）---------------------------------
+
+                //[AC]ボタン処理（変数初期化）
+                if($_POST['button']=="AC"){
+                    $num="0";                                   //$numを0に設定する
+                    $keep1="n";                                 //$keep1を空白にする
+                    $keep2="n";                                 //$keep2を空白にする
+                    $enzan='n';                                 //$enzan(演算子)をクリアする
+                }
+                //データ取得（引継ぎデータを変数に代入）
+                else{
+                    $num=$_POST['button'];                      //$numに取得データを代入
+                    $keep1=$_POST['keep1'];                     //$keep1に保持データを代入
+                    $keep2=$_POST['keep2'];                     //$keep2に保持データを代入
+                    $enzan=$_POST['enzan'];                     //$enzanに保持データ（演算子）を代入
+                }
+
+                //計算処理
+
+                //演算子あり
+                if($enzan=="+" || $enzan=="*"){
+                    //[数字ボタン]処理
+                    if(is_numeric($num)){
+                        $keep2=numadd($keep2,$num);             //数字追加関数呼び出し
+                        print($keep2);                          //結果の表示
+                    }
+                    //[消費税]ボタン処理（演算中なので何もしない）
+                    elseif($num=="t"){
+                        if($keep2=="n"){
+                            print($keep1);                      //結果の表示
+                        }
+                        else{
+                            print($keep2);                      //結果の表示
+                        }
+                    }
+                    //[=]ボタン処理 （）
+                    elseif($num=="="){
+                        if($keep2!="n"){
+                            $keep1=calc($keep1,$keep2,$enzan);  //演算関数の呼び出し
+                            $keep2="n";                         //$keep2のクリア
+                            $enzan="n";                         //演算子のクリア
+                        }
+                        print($keep1);                          //結果の表示
+                    }
+                    //[計上]ボタン処理
+                    elseif($num=="a"){
+                        //データが空でないかチェック
+                        if($keep1!="n"){
+                            if($keep2=="n"){
+                                insert($keep1);                 //データベースに登録
+                                print("登録しました：" . $keep1);//メッセージ表示
+                                $num="0";                       //$numを0に設定する
+                                $keep1="n";                     //$keep1を空白にする
+                                $keep2="n";                     //$keep2を空白にする
+                                $enzan='n';                     //$enzan(演算子)をクリアする
+                            }
+                            else{
+                                insert($keep2);                 //データベースに登録
+                                print("登録しました：" . $keep2);//メッセージ表示
+                            }
+                        }
+                        else{
+                            print("データがありません");         //データがないを表示
+                        }
+                    }
+                    //[売上]ボタン処理
+                    elseif($num=="d"){
+                        if($keep2=="n"){
+                            print("売上：" . display());        //メッセージ表示
+                        }
+                        else{
+                            print("売上：" . display());        //メッセージ表示
+                        }
+                        $num="0";                               //$numを0に設定する
+                        $keep1="n";                             //$keep1を空白にする
+                        $keep2="n";                             //$keep2を空白にする
+                        $enzan='n';                             //$enzan(演算子)をクリアする                     
+                    }
+                    //[+]ボタン処理
+                    elseif($num=="+"){
+                        if($keep2 != "n"){
+                            $keep1=calc($keep1,$keep2,$enzan);  //演算関数の呼び出し
+                            $keep2="n";                         //$keep2をクリア
+                            $enzan=$num;                        //演算子を追加
+                        }
+                        print($keep1);                          //結果の表示
+                    }
+                    //[x]ボタン処理 
+                    elseif($num=="*"){
+                        if($keep2 != "n"){
+                            $keep1=calc($keep1,$keep2,$enzan);  //演算関数の呼び出し
+                            $keep2="n";                         //$keep2をクリア
+                            $enzan=$num;                        //演算子の追加
+                        }
+                        print($keep1);                          //結果の表示
+                    }
+                    else{
+                        if($keep2=="n"){
+                            print($keep1);                      //結果の表示
+                        }
+                        else{
+                            print($keep2);                      //結果の表示
+                        }                        
+                    }
+                }
+                // 演算子なし
+                else{
+                    //[数字ボタン]処理
+                    if(is_numeric($num)){
+                        $keep1=numadd($keep1,$num);             //数字追加関数呼び出し
+                        print($keep1);                          //結果の表示
+                    }
+                    //[消費税]ボタン処理
+                    elseif($num=="t"){
+                        $keep1=tax($keep1);                     //消費税計算関数の呼び出し
+                        print($keep1);                          //結果の表示
+                    }
+                    //[=]ボタン処理 
+                    elseif($num=="="){
+                        $enzan="n";                             //演算子クリア
+                        print($keep1);                          //結果の表示
+                    }//[計上]ボタン処理
+                    elseif($num=="a"){
+                        if($keep1!="n"){
+                            insert($keep1);
+                            print("登録しました：" . $keep1);
+                            $num="0";                           //$numを0に設定する
+                            $keep1="n";                         //$keep1を空白にする
+                            $keep2="n";                         //$keep2を空白にする
+                            $enzan='n';                         //$enzan(演算子)をクリアする
+                        }
+                        else{
+                            print("データがありません");          //データがないを表示
+                        }
+                                                      
+                    }
+                    //[売上]ボタン処理
+                    elseif($num=="d"){
+                        print("売上：" . display());
+                        $num="0";                               //$numを0に設定する
+                        $keep1="n";                             //$keep1を空白にする
+                        $keep2="n";                             //$keep2を空白にする
+                        $enzan='n';                             //$enzan(演算子)をクリアする    
+                    }
+                    //[+]ボタン処理
+                    elseif($num=="+"){
+                        if($keep1 != "n"){
+                            $enzan=$num;                        //演算子追加
+                        }
+                        print($keep1);                          //結果の表示
+                    }
+                    //[x]ボタン処理 
+                    elseif($num=="*"){
+                        if($keep1 != "n"){
+                            $enzan=$num;                        //演算子追加
+                        }
+                        print($keep1);                          //結果の表示
+                    }
+                    else{
+                    }
+                }
+            ?>
+        </p>
+        
+        <!-- レジ画面 -->
+        <form action="register.php" method="post">
+
+            <!-- 保持する変数（次のページに引き継ぐ）-->
+            <input type="hidden" name="keep1" value="<?php print($keep1);?>">
+            <input type="hidden" name="keep2" value="<?php print($keep2);?>">
+            <input type="hidden" name="enzan" value="<?php print($enzan);?>">
+
+            <!-- ボタン画面（表を利用） -->
+            <table>
+            <tr align="center">
+                    <td colspan="2"><button type="submit" name="button" value="AC" style="height:30px;width:105px;">AC</button></td>
+                    <td colspan="2"><button type="submit" name="button" value="t" style="height:30px;width:105px;">税込み</button></td>
+                </tr>
+                <tr align="center">
+                    <td><button type="submit" name="button" value="7" style="height:30px;width:50px;">7</button></td>
+                    <td><button type="submit" name="button" value="8" style="height:30px;width:50px;">8</button></td>
+                    <td><button type="submit" name="button" value="9" style="height:30px;width:50px;">9</button></td>
+                    <td><button type="submit" name="button" value="*" style="height:30px;width:50px;">×</button></td>
+                </tr>
+                <tr align="center">
+                    <td><button type="submit" name="button" value="4" style="height:30px;width:50px;">4</button></td>
+                    <td><button type="submit" name="button" value="5" style="height:30px;width:50px;">5</button></td>
+                    <td><button type="submit" name="button" value="6" style="height:30px;width:50px;">6</button></td>
+                    <td><button type="submit" name="button" value="+" style="height:30px;width:50px;">+</button></td>
+                </tr>
+                <tr align="center">
+                    <td><button type="submit" name="button" value="1" style="height:30px;width:50px;">1</button></td>
+                    <td><button type="submit" name="button" value="2" style="height:30px;width:50px;">2</button></td>
+                    <td><button type="submit" name="button" value="3" style="height:30px;width:50px;">3</button></td>
+                    <td rowspan="2"><button type="submit" name="button" value="=" style="height:65px;width:50px;">=</button></td>
+                </tr>
+                <tr align="center">
+                    <td><button type="submit" name="button" value="0" style="height:30px;width:50px;">0</button></td>
+                    <td><button type="submit" name="button" value="d" style="height:30px;width:50px;">売上</button></td>
+                    <td><button type="submit" name="button" value="a" style="height:30px;width:50px;">計上</button></td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>
