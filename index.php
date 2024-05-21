@@ -48,12 +48,18 @@
 </style>
 </head>
 <body>
-<div class="calculator">
-  <form action="update.php" method="post">
-               <input type="text" id="display" name="price" class="w-full mb-4 px-2 py-1 border rounded" readonly>
-                <button class="btn" onclick="update()">計上</button>
-            </form>
-  <br>
+<!--よくわかんないやつ <div class="calculator">
+    <form action="update.php" method="post" style="display: flex;">
+        <input type="text" id="display" name="price" class="w-full mb-4 px-2 py-1 border rounded" readonly>
+        <button class="btn" onclick="update()">計上</button>
+    </form>
+    <br> -->
+いままでのやつ <div class="calculator">
+<form action="update.php" method="post">
+    <input type="text" id="display" name="price" class="w-full mb-4 px-2 py-1 border rounded" readonly>
+    <button class="btn" onclick="update()">計上</button>
+</form>
+  <br> 
   <input type="button" value="AC" onclick="clearDisplay()"" class="equals">
   <input type="button" value="税込み" onclick="calculateTax()"" class="equals">
   <br>
@@ -70,13 +76,13 @@
   <input type="button" value="1" onclick="addToDisplay('1')">
   <input type="button" value="2" onclick="addToDisplay('2')">
   <input type="button" value="3" onclick="addToDisplay('3')">
+  <input type="button" value="=" onclick="calculate()">
   <br>
   <input type="button" value="0" onclick="addToDisplay('0')">
   <input type="button" value="売上" onclick="sales()">
   <input type="button" value="=" onclick="calculate()">
   <br>
 </div>
-
 <script>
 function addToDisplay(value) {
   document.getElementById("display").value += value;
@@ -88,12 +94,18 @@ function clearDisplay() {
 
 function calculate() {
   var expression = document.getElementById("display").value;
+  if (expression === "") { // 入力フィールドが空の場合
+    return; // 何もせずに関数を終了する
+  }
   var result = eval(expression);
   document.getElementById("display").value = result;
 }
 
 function calculateTax() {
   var expression = document.getElementById("display").value;
+  if (expression === "") { // 入力フィールドが空の場合
+    return; // 何もせずに関数を終了する
+  }
   var result = eval(expression);
   var taxIncludedPrice = result * 1.1; // 税率10%
   document.getElementById("display").value = taxIncludedPrice.toFixed(0);
@@ -101,17 +113,31 @@ function calculateTax() {
 
 function sales() {
   var expression = document.getElementById("display").value;
+  if (expression === "") { // 入力フィールドが空の場合
+    return; // 何もせずに関数を終了する
+  }
   var result = eval(expression);
   alert("売り上げは " + result.toFixed(2) + " 円です。");
+}
+function update() {
+  var price = document.getElementById("display").value;
+  if (price === "0") {
+    return false; // フォーム送信を中止
+  }
 }
 
 function record() {
   var expression = document.getElementById("display").value;
+  if (expression === "") { // 入力フィールドが空の場合
+    return; // 何もせずに関数を終了する
+  }
   var result = eval(expression);
   // ここに計上処理を追加する（例えば、データベースに記録するなど）
   alert("計上しました。");
+  window.location.href = './';
 }
 </script>
 
 </body>
 </html>
+
