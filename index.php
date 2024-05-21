@@ -79,6 +79,12 @@
 var taxButtonClicked = false;
 
 function addToDisplay(value) {
+  // ディスプレイに数字がない場合に、+ ボタンと × ボタンを入力不可にする
+  if (value === '+' || value === '*') {
+    if (document.getElementById("display").value === "") {
+      return;
+    }
+  }
   document.getElementById("display").value += value;
   // ディスプレイの内容が変更されたら、税込みボタンを有効化する
   taxButtonClicked = false;
